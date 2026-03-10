@@ -23,7 +23,7 @@ class PolyAModel_mean():
                 L_mean_kb = 1.94218,     # White et al.
                 S_depth = 3.8e6,         # White et al.
 
-                P_mean = 100.0,       # Subtelny et al (2014) 
+                P_max = 100.0,       # Subtelny et al (2014) 
 
                 K_b = 15.85,           #  fitted, Meijer (2007)
                 n = 2.0,               # fitted, Meijer (2007)
@@ -43,7 +43,7 @@ class PolyAModel_mean():
         self.n = n
 
         self.P_min = P_min
-        self.P_mean = P_mean
+        self.P_max = P_max
         self.k_d = k_d
         self.k_p = k_p
 
@@ -98,21 +98,21 @@ class PolyAModel_mean():
                 np.where(t <= t_off, slope * (t - t_on), 1.0))
     
     
-    def _rhs_model(t, y, x_in, k_p, k_d, P_min, P_mean):
+    def _rhs_model(t, y, x_in, k_p, k_d, P_min, P_max):
         ''' 
         P: median Poly(A) tail length   [nt]
         H: degradation hazard
         k_p: polyadenylation rate       [1/h]
         k_p: deadenylation rate         [1/h]
-        P_mean: mean polyA tail length  [nt]
+        P_max: mean polyA tail length  [nt]
         P_min: polyA tail degradation threshold  [nt]
         '''
         P, H = y
         rep = x_in.evaluate(t)
 
         h = polyA_decay_prob(P, P_min) * rep
-        dPdt =  k_p * P * (1 - P/P_mean) - (k_d * rep )  * P  ## logistic
-        #dPdt =  k_p * (P_mean - P) - (k_d * rep )  * P 
+        dPdt =  k_p * P * (1 - P/P_max) - (k_d * rep )  * P  ## logistic
+        #dPdt =  k_p * (P_max - P) - (k_d * rep )  * P 
         #dPdt =  k_p - (k_d * rep)  * P    # no scaled k_p
         dHdt = h
         return dPdt, dHdt 
@@ -169,7 +169,7 @@ class PolyAModel_mean():
         # Free parameter
         sim.config.model_parameters.k_p = Param(value=self.k_p, free=True, prior=f"lognorm(scale={self.k_p}, s=1)")
         sim.config.model_parameters.k_d = Param(value=self.k_d,  free=True,  prior=f"lognorm(scale={self.k_d}, s=1)")
-        sim.config.model_parameters.P_mean = Param(value=self.P_mean, free=False, prior=f"gamma(a={self.P_mean}, scale=1)" )
+        sim.config.model_parameters.P_max = Param(value=self.P_max, free=False, prior=f"gamma(a={self.P_max}, scale=1)" )
         sim.config.model_parameters.sigma_y = Param(value=0.1, free=True , prior="lognorm(scale=0.5, s=0.5)", min=1e-3, max=1)
         
         # Fixed
